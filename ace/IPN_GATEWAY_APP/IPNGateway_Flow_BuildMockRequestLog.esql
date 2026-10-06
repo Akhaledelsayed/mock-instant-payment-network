@@ -1,0 +1,75 @@
+CREATE COMPUTE MODULE IPNGateway_Flow_BuildMockRequestLog
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE transactionId CHARACTER;
+        DECLARE sourceBank CHARACTER;
+        DECLARE sourceAccount CHARACTER;
+        DECLARE destinationBank CHARACTER;
+        DECLARE destinationAccount CHARACTER;
+        DECLARE amount CHARACTER;
+        DECLARE currency CHARACTER;
+        DECLARE idempotencyKey CHARACTER;
+        DECLARE status CHARACTER;
+        DECLARE requestType CHARACTER;
+        DECLARE payload CHARACTER;
+
+        SET transactionId =
+            InputRoot.JSON.Data.transactionId;
+
+        SET sourceBank =
+            InputRoot.JSON.Data.sourceBank;
+
+        SET sourceAccount =
+            InputRoot.JSON.Data.sourceAccount;
+
+        SET destinationBank =
+            InputRoot.JSON.Data.destinationBank;
+
+        SET destinationAccount =
+            InputRoot.JSON.Data.destinationAccount;
+
+        SET amount =
+            CAST(InputRoot.JSON.Data.amount AS CHARACTER);
+
+        SET currency =
+            InputRoot.JSON.Data.currency;
+
+        SET idempotencyKey =
+            InputRoot.JSON.Data.idempotencyKey;
+
+        SET status =
+            InputRoot.JSON.Data.status;
+
+        SET requestType =
+            InputRoot.JSON.Data.requestType;
+
+        SET payload =
+            '{' ||
+            '"transactionId":"' || transactionId || '",' ||
+            '"sourceBank":"' || sourceBank || '",' ||
+            '"sourceAccount":"' || sourceAccount || '",' ||
+            '"destinationBank":"' || destinationBank || '",' ||
+            '"destinationAccount":"' || destinationAccount || '",' ||
+            '"amount":' || amount || ',' ||
+            '"currency":"' || currency || '",' ||
+            '"idempotencyKey":"' || idempotencyKey || '",' ||
+            '"status":"' || status || '",' ||
+            '"requestType":"' || requestType || '"' ||
+            '}';
+
+        DELETE FIELD OutputRoot;
+
+        SET OutputRoot.Properties.MessageDomain = 'JSON';
+
+        SET OutputRoot.JSON.Data.transactionId = transactionId;
+        SET OutputRoot.JSON.Data.eventType = 'MOCK_REQUEST';
+        SET OutputRoot.JSON.Data.payload = payload;
+        SET OutputRoot.JSON.Data.status = 'MOCK_REQUEST_SENT';
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

@@ -1,0 +1,8 @@
+CREATE FILTER MODULE BankA_Payment_In_ValidationOK
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+        RETURN Root.JSON.Data.success = TRUE;
+    END;
+
+END MODULE;

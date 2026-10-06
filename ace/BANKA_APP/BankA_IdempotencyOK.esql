@@ -1,0 +1,13 @@
+CREATE FILTER MODULE BankA_Payment_In_IdempotencyOK
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+        IF EXISTS(Root.JSON.Data.continueProcessing[])
+           AND Root.JSON.Data.continueProcessing = TRUE THEN
+            RETURN TRUE;
+        ELSE
+            RETURN FALSE;
+        END IF;
+    END;
+
+END MODULE;

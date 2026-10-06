@@ -1,0 +1,69 @@
+CREATE COMPUTE MODULE BankB_Payment_In_CreditBankBAccount
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE transactionId CHARACTER;
+        DECLARE idempotencyKey CHARACTER;
+        DECLARE sourceBank CHARACTER;
+        DECLARE sourceAccount CHARACTER;
+        DECLARE destinationBank CHARACTER;
+        DECLARE destinationAccount CHARACTER;
+        DECLARE amount DECIMAL;
+        DECLARE currency CHARACTER;
+
+        SET transactionId =
+            InputRoot.JSON.Data.transactionId;
+
+        SET idempotencyKey =
+            InputRoot.JSON.Data.idempotencyKey;
+
+        SET sourceBank =
+            InputRoot.JSON.Data.sourceBank;
+
+        SET sourceAccount =
+            InputRoot.JSON.Data.sourceAccount;
+
+        SET destinationBank =
+            InputRoot.JSON.Data.destinationBank;
+
+        SET destinationAccount =
+            InputRoot.JSON.Data.destinationAccount;
+
+        SET amount =
+            CAST(InputRoot.JSON.Data.amount AS DECIMAL);
+
+        SET currency =
+            InputRoot.JSON.Data.currency;
+
+        CALL CreditBankBPayment(
+            transactionId,
+            idempotencyKey,
+            sourceBank,
+            sourceAccount,
+            destinationBank,
+            destinationAccount,
+            amount,
+            currency
+        );
+
+        RETURN FALSE;
+
+    END;
+
+
+    CREATE PROCEDURE CreditBankBPayment
+    (
+        IN p_transaction_id CHARACTER,
+        IN p_idempotency_key CHARACTER,
+        IN p_source_bank CHARACTER,
+        IN p_source_account CHARACTER,
+        IN p_destination_bank CHARACTER,
+        IN p_destination_account CHARACTER,
+        IN p_amount DECIMAL,
+        IN p_currency CHARACTER
+    )
+    LANGUAGE DATABASE
+    EXTERNAL NAME "dbo.SP_CREDIT_BANKB_PAYMENT";
+
+END MODULE;

@@ -1,0 +1,183 @@
+{
+  "info": {
+    "_postman_id": "53cd5fcd-9abe-42b8-9a56-3f980a844e0d",
+    "name": "IPN_MOCK_PROJECT",
+    "description": "Educational Mock Instant Payment Network collection for IBM ACE + IBM MQ + SQL Server. Includes new payment, duplicate replay, idempotency conflict, and mock IPN acceptance tests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:7801"
+    },
+    {
+      "key": "mock_ipn_url",
+      "value": "https://YOUR-MOCK-SERVER.mock.pstmn.io/ipn/payments"
+    }
+  ],
+  "item": [
+    {
+      "name": "Bank A - New Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sourceAccount\": \"A001\",\n  \"destinationBank\": \"BANKB\",\n  \"destinationAccount\": \"B001\",\n  \"amount\": 1,\n  \"currency\": \"EGP\",\n  \"idempotencyKey\": \"IDEMP-FINAL-001\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/payments",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": []
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Payment accepted\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(true); pm.expect(j.status).to.eql(\"DEBITED\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bank A - Duplicate Replay",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sourceAccount\": \"A001\",\n  \"destinationBank\": \"BANKB\",\n  \"destinationAccount\": \"B001\",\n  \"amount\": 1,\n  \"currency\": \"EGP\",\n  \"idempotencyKey\": \"IDEMP-FINAL-001\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/payments",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": []
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Duplicate returned\", function () { var j = pm.response.json(); pm.expect(j.duplicate).to.eql(true); pm.expect(j.continueProcessing).to.eql(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bank A - Idempotency Conflict",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sourceAccount\": \"A001\",\n  \"destinationBank\": \"BANKB\",\n  \"destinationAccount\": \"B001\",\n  \"amount\": 2,\n  \"currency\": \"EGP\",\n  \"idempotencyKey\": \"IDEMP-FINAL-001\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/payments",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": []
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"Conflict returned\", function () { var j = pm.response.json(); pm.expect(j.success).to.eql(false); pm.expect(j.error.code).to.eql(\"IDEMPOTENCY_CONFLICT\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mock IPN - Accept Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"transactionId\": \"TXN-TEST\",\n  \"sourceBank\": \"BANKA\",\n  \"sourceAccount\": \"A001\",\n  \"destinationBank\": \"BANKB\",\n  \"destinationAccount\": \"B001\",\n  \"amount\": 25,\n  \"currency\": \"EGP\",\n  \"idempotencyKey\": \"IDEMP-MOCK-TEST\",\n  \"status\": \"DEBITED\",\n  \"requestType\": \"PAYMENT_TRANSFER\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{mock_ipn_url}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": []
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

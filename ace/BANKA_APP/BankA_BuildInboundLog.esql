@@ -1,0 +1,58 @@
+CREATE COMPUTE MODULE BankA_Payment_In_BuildInboundLog
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE transactionId CHARACTER;
+        DECLARE sourceAccount CHARACTER;
+        DECLARE destinationBank CHARACTER;
+        DECLARE destinationAccount CHARACTER;
+        DECLARE amount CHARACTER;
+        DECLARE currency CHARACTER;
+        DECLARE idempotencyKey CHARACTER;
+        DECLARE payload CHARACTER;
+
+        SET transactionId =
+            InputRoot.JSON.Data.transactionId;
+
+        SET sourceAccount =
+            InputRoot.JSON.Data.payment.sourceAccount;
+
+        SET destinationBank =
+            InputRoot.JSON.Data.payment.destinationBank;
+
+        SET destinationAccount =
+            InputRoot.JSON.Data.payment.destinationAccount;
+
+        SET amount =
+            CAST(InputRoot.JSON.Data.payment.amount AS CHARACTER);
+
+        SET currency =
+            InputRoot.JSON.Data.payment.currency;
+
+        SET idempotencyKey =
+            InputRoot.JSON.Data.payment.idempotencyKey;
+
+        SET payload =
+            '{' ||
+            '"sourceAccount":"' || sourceAccount || '",' ||
+            '"destinationBank":"' || destinationBank || '",' ||
+            '"destinationAccount":"' || destinationAccount || '",' ||
+            '"amount":' || amount || ',' ||
+            '"currency":"' || currency || '",' ||
+            '"idempotencyKey":"' || idempotencyKey || '"' ||
+            '}';
+
+        DELETE FIELD OutputRoot;
+
+        SET OutputRoot.Properties.MessageDomain = 'JSON';
+
+        SET OutputRoot.JSON.Data.transactionId = transactionId;
+        SET OutputRoot.JSON.Data.eventType = 'INBOUND_REQUEST';
+        SET OutputRoot.JSON.Data.payload = payload;
+        SET OutputRoot.JSON.Data.status = 'RECEIVED';
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

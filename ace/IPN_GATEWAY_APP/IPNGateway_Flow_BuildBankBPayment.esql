@@ -1,0 +1,40 @@
+CREATE COMPUTE MODULE IPNGateway_Flow_BuildBankBPayment
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DELETE FIELD OutputRoot;
+
+        SET OutputRoot.Properties.MessageDomain = 'JSON';
+
+        SET OutputRoot.JSON.Data.transactionId =
+            Environment.Variables.transactionId;
+
+        SET OutputRoot.JSON.Data.idempotencyKey =
+            Environment.Variables.idempotencyKey;
+
+        SET OutputRoot.JSON.Data.sourceBank =
+            Environment.Variables.sourceBank;
+
+        SET OutputRoot.JSON.Data.sourceAccount =
+            Environment.Variables.sourceAccount;
+
+        SET OutputRoot.JSON.Data.destinationBank =
+            Environment.Variables.destinationBank;
+
+        SET OutputRoot.JSON.Data.destinationAccount =
+            Environment.Variables.destinationAccount;
+
+        SET OutputRoot.JSON.Data.amount =
+            Environment.Variables.amount;
+
+        SET OutputRoot.JSON.Data.currency =
+            Environment.Variables.currency;
+
+        SET OutputRoot.JSON.Data.status = 'ACCEPTED';
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

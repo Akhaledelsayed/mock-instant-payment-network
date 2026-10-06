@@ -1,0 +1,5 @@
+{
+  "success": true,
+  "networkStatus": "ACCEPTED",
+  "message": "Payment accepted by Mock IPN"
+}

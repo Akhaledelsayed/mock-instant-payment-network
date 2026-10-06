@@ -1,0 +1,18 @@
+CREATE COMPUTE MODULE BankA_Payment_In_GenerateTransactionId
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        SET OutputRoot = InputRoot;
+
+        SET Environment.Variables.transactionId =
+            'TXN-' || UUIDASCHAR;
+
+        SET OutputRoot.JSON.Data.transactionId =
+            Environment.Variables.transactionId;
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

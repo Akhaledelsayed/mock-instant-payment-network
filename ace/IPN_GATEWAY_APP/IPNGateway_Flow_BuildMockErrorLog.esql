@@ -1,0 +1,34 @@
+CREATE COMPUTE MODULE IPNGateway_Flow_BuildMockErrorLog
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE transactionId CHARACTER;
+        DECLARE errorCode CHARACTER;
+        DECLARE errorMessage CHARACTER;
+
+        SET transactionId =
+            Environment.Variables.transactionId;
+
+        SET errorCode = 'MOCK_IPN_CALL_FAILED';
+
+        SET errorMessage =
+            'Failed to call Mock IPN endpoint';
+
+        DELETE FIELD OutputRoot;
+
+        SET OutputRoot.Properties.MessageDomain = 'JSON';
+
+        SET OutputRoot.JSON.Data.transactionId = transactionId;
+        SET OutputRoot.JSON.Data.eventType = 'ERROR';
+        SET OutputRoot.JSON.Data.status = 'ERROR';
+        SET OutputRoot.JSON.Data.errorCode = errorCode;
+        SET OutputRoot.JSON.Data.errorMessage = errorMessage;
+        SET OutputRoot.JSON.Data.payload =
+            '{"error":"Mock IPN call failed"}';
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

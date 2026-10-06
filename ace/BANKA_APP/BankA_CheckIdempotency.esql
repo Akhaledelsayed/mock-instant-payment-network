@@ -1,0 +1,94 @@
+CREATE COMPUTE MODULE BankA_Payment_In_CheckIdempotency
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+        DECLARE idemKey CHARACTER;
+        DECLARE sourceAccount CHARACTER;
+        DECLARE destinationBank CHARACTER;
+        DECLARE destinationAccount CHARACTER;
+        DECLARE paymentCurrency CHARACTER;
+        DECLARE paymentAmount DECIMAL;
+        DECLARE existing ROW;
+
+        SET idemKey = InputRoot.JSON.Data.payment.idempotencyKey;
+        SET sourceAccount = InputRoot.JSON.Data.payment.sourceAccount;
+        SET destinationBank = InputRoot.JSON.Data.payment.destinationBank;
+        SET destinationAccount = InputRoot.JSON.Data.payment.destinationAccount;
+        SET paymentCurrency = InputRoot.JSON.Data.payment.currency;
+        SET paymentAmount = CAST(InputRoot.JSON.Data.payment.amount AS DECIMAL);
+
+        SET existing.Result[] =
+            SELECT
+                P.transaction_id AS transaction_id,
+                P.source_account AS source_account,
+                P.destination_bank AS destination_bank,
+                P.destination_account AS destination_account,
+                P.amount AS amount,
+                P.currency AS currency,
+                P.status AS status
+            FROM Database.dbo.PAYMENT_TRANSACTIONS AS P
+            WHERE P.idempotency_key = idemKey;
+
+        ------------------------------------------------
+        -- CASE 1: New idempotency key
+        ------------------------------------------------
+        IF CARDINALITY(existing.Result[]) = 0 THEN
+
+            SET OutputRoot = InputRoot;
+            SET OutputRoot.JSON.Data.continueProcessing = TRUE;
+            SET OutputRoot.JSON.Data.idempotencyStatus = 'NEW';
+
+            RETURN TRUE;
+
+        END IF;
+
+        ------------------------------------------------
+        -- CASE 2: Same idempotency key + same payment
+        -- Return existing transaction without debit again
+        ------------------------------------------------
+        IF existing.Result[1].source_account = sourceAccount
+           AND existing.Result[1].destination_bank = destinationBank
+           AND existing.Result[1].destination_account = destinationAccount
+           AND existing.Result[1].amount = paymentAmount
+           AND existing.Result[1].currency = paymentCurrency THEN
+
+            DELETE FIELD OutputRoot;
+            SET OutputRoot.Properties.MessageDomain = 'JSON';
+
+            SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 200;
+
+            SET OutputRoot.JSON.Data.success = TRUE;
+            SET OutputRoot.JSON.Data.continueProcessing = FALSE;
+            SET OutputRoot.JSON.Data.duplicate = TRUE;
+            SET OutputRoot.JSON.Data.transactionId = existing.Result[1].transaction_id;
+            SET OutputRoot.JSON.Data.idempotencyKey = idemKey;
+            SET OutputRoot.JSON.Data.status = existing.Result[1].status;
+            SET OutputRoot.JSON.Data.amount = existing.Result[1].amount;
+            SET OutputRoot.JSON.Data.currency = existing.Result[1].currency;
+            SET OutputRoot.JSON.Data.message = 'Duplicate idempotency key; existing transaction returned';
+
+            RETURN TRUE;
+
+        END IF;
+
+        ------------------------------------------------
+        -- CASE 3: Same idempotency key but different payment
+        -- Return business conflict response, but HTTP status = 200 OK
+        ------------------------------------------------
+        DELETE FIELD OutputRoot;
+        SET OutputRoot.Properties.MessageDomain = 'JSON';
+
+        SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 200;
+
+        SET OutputRoot.JSON.Data.success = FALSE;
+        SET OutputRoot.JSON.Data.continueProcessing = FALSE;
+        SET OutputRoot.JSON.Data.duplicate = FALSE;
+        SET OutputRoot.JSON.Data.idempotencyKey = idemKey;
+        SET OutputRoot.JSON.Data.error.code = 'IDEMPOTENCY_CONFLICT';
+        SET OutputRoot.JSON.Data.error.message = 'Idempotency key already used for a different payment';
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

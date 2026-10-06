@@ -1,0 +1,147 @@
+CREATE COMPUTE MODULE BankA_Payment_In_CheckSourceAccount
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE sourceAccount CHARACTER
+            InputRoot.JSON.Data.sourceAccount;
+
+        DECLARE paymentCurrency CHARACTER
+            InputRoot.JSON.Data.currency;
+
+        DECLARE paymentAmount DECIMAL
+            CAST(InputRoot.JSON.Data.amount AS DECIMAL);
+
+        DECLARE acc ROW;
+
+        SET acc.Result[] =
+            SELECT
+                A.account_id AS account_id,
+                A.balance AS balance,
+                A.currency AS currency,
+                A.status AS status
+            FROM Database.dbo.ACCOUNTS AS A
+            WHERE A.account_id = sourceAccount;
+
+        DELETE FIELD OutputRoot;
+
+        -- 1. Source account does not exist
+        IF CARDINALITY(acc.Result[]) = 0 THEN
+
+            SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 404;
+
+            SET OutputRoot.JSON.Data.success = FALSE;
+
+            SET OutputRoot.JSON.Data.requestId =
+                Environment.Variables.requestId;
+
+            SET OutputRoot.JSON.Data.error.code =
+                'SOURCE_ACCOUNT_NOT_FOUND';
+
+            SET OutputRoot.JSON.Data.error.message =
+                'Source account does not exist';
+
+            RETURN TRUE;
+
+        END IF;
+
+        -- 2. Source account must be ACTIVE
+        IF acc.Result[1].status <> 'ACTIVE' THEN
+
+            SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 422;
+
+            SET OutputRoot.JSON.Data.success = FALSE;
+
+            SET OutputRoot.JSON.Data.requestId =
+                Environment.Variables.requestId;
+
+            SET OutputRoot.JSON.Data.error.code =
+                'SOURCE_ACCOUNT_INACTIVE';
+
+            SET OutputRoot.JSON.Data.error.message =
+                'Source account is not active';
+
+            RETURN TRUE;
+
+        END IF;
+
+        -- 3. Currency must match
+        IF acc.Result[1].currency <> paymentCurrency THEN
+
+            SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 422;
+
+            SET OutputRoot.JSON.Data.success = FALSE;
+
+            SET OutputRoot.JSON.Data.requestId =
+                Environment.Variables.requestId;
+
+            SET OutputRoot.JSON.Data.error.code =
+                'CURRENCY_MISMATCH';
+
+            SET OutputRoot.JSON.Data.error.message =
+                'Payment currency does not match account currency';
+
+            RETURN TRUE;
+
+        END IF;
+
+        -- 4. Balance must be sufficient
+        IF acc.Result[1].balance < paymentAmount THEN
+
+            SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 422;
+
+            SET OutputRoot.JSON.Data.success = FALSE;
+
+            SET OutputRoot.JSON.Data.requestId =
+                Environment.Variables.requestId;
+
+            SET OutputRoot.JSON.Data.error.code =
+                'INSUFFICIENT_BALANCE';
+
+            SET OutputRoot.JSON.Data.error.message =
+                'Insufficient account balance';
+
+            RETURN TRUE;
+
+        END IF;
+
+        -- All source account checks passed
+        SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 200;
+
+        SET OutputRoot.JSON.Data.success = TRUE;
+
+        SET OutputRoot.JSON.Data.requestId =
+            Environment.Variables.requestId;
+
+        SET OutputRoot.JSON.Data.message =
+            'Source account validation successful';
+
+        SET OutputRoot.JSON.Data.payment.sourceAccount =
+            sourceAccount;
+
+        SET OutputRoot.JSON.Data.payment.destinationBank =
+            InputRoot.JSON.Data.destinationBank;
+
+        SET OutputRoot.JSON.Data.payment.destinationAccount =
+            InputRoot.JSON.Data.destinationAccount;
+
+        SET OutputRoot.JSON.Data.payment.amount =
+            paymentAmount;
+
+        SET OutputRoot.JSON.Data.payment.currency =
+            paymentCurrency;
+
+        SET OutputRoot.JSON.Data.payment.idempotencyKey =
+            InputRoot.JSON.Data.idempotencyKey;
+
+        SET OutputRoot.JSON.Data.account.balance =
+            acc.Result[1].balance;
+
+        SET OutputRoot.JSON.Data.account.status =
+            acc.Result[1].status;
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

@@ -1,0 +1,74 @@
+CREATE COMPUTE MODULE PaymentLogging_Flow_WritePaymentLog
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE transactionId CHARACTER;
+        DECLARE eventType CHARACTER;
+        DECLARE payload CHARACTER;
+        DECLARE eventTime TIMESTAMP;
+        DECLARE status CHARACTER;
+        DECLARE errorCode CHARACTER;
+        DECLARE errorMessage CHARACTER;
+
+        SET transactionId =
+            InputRoot.JSON.Data.transactionId;
+
+        SET eventType =
+            InputRoot.JSON.Data.eventType;
+		IF InputRoot.JSON.Data.payload IS NOT NULL THEN
+		    SET payload =
+		        CAST(InputRoot.JSON.Data.payload AS CHARACTER);
+		END IF;
+		
+		IF InputRoot.JSON.Data.eventTime IS NOT NULL THEN
+		    SET eventTime =
+		        CAST(InputRoot.JSON.Data.eventTime AS TIMESTAMP);
+		ELSE
+		    SET eventTime = CURRENT_GMTTIMESTAMP;
+		END IF;
+		
+		IF InputRoot.JSON.Data.status IS NOT NULL THEN
+		    SET status =
+		        InputRoot.JSON.Data.status;
+		END IF;
+		
+		IF InputRoot.JSON.Data.errorCode IS NOT NULL THEN
+		    SET errorCode =
+		        InputRoot.JSON.Data.errorCode;
+		END IF;
+		
+		IF InputRoot.JSON.Data.errorMessage IS NOT NULL THEN
+		    SET errorMessage =
+		        InputRoot.JSON.Data.errorMessage;
+		END IF;
+
+        CALL UpsertPaymentLogEvent(
+            transactionId,
+            eventType,
+            payload,
+            eventTime,
+            status,
+            errorCode,
+            errorMessage
+        );
+
+        RETURN FALSE;
+
+    END;
+
+
+    CREATE PROCEDURE UpsertPaymentLogEvent
+    (
+        IN p_transaction_id CHARACTER,
+        IN p_event_type CHARACTER,
+        IN p_payload CHARACTER,
+        IN p_event_time TIMESTAMP,
+        IN p_status CHARACTER,
+        IN p_error_code CHARACTER,
+        IN p_error_message CHARACTER
+    )
+    LANGUAGE DATABASE
+    EXTERNAL NAME "dbo.SP_UPSERT_PAYMENT_LOG_EVENT";
+
+END MODULE;

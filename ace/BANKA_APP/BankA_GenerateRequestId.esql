@@ -1,0 +1,18 @@
+CREATE COMPUTE MODULE BankA_Payment_In_GenerateRequestId
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE requestId CHARACTER;
+
+        SET requestId = 'REQ-' || UUIDASCHAR;
+
+        SET Environment.Variables.requestId = requestId;
+
+        SET OutputRoot = InputRoot;
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

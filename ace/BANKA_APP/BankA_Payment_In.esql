@@ -1,0 +1,41 @@
+CREATE COMPUTE MODULE BankA_Payment_In_ValidatePayment
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        IF NOT EXISTS(InputRoot.JSON.Data.sourceAccount[])
+           OR NOT EXISTS(InputRoot.JSON.Data.destinationBank[])
+           OR NOT EXISTS(InputRoot.JSON.Data.destinationAccount[])
+           OR NOT EXISTS(InputRoot.JSON.Data.amount[])
+           OR NOT EXISTS(InputRoot.JSON.Data.currency[])
+           OR NOT EXISTS(InputRoot.JSON.Data.idempotencyKey[]) THEN
+
+            DELETE FIELD OutputRoot;
+            SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 400;
+            SET OutputRoot.JSON.Data.success = FALSE;
+            SET OutputRoot.JSON.Data.error.code = 'INVALID_REQUEST';
+            SET OutputRoot.JSON.Data.error.message = 'Missing required field';
+
+            RETURN TRUE;
+        END IF;
+
+        IF InputRoot.JSON.Data.amount <= 0 THEN
+
+            DELETE FIELD OutputRoot;
+            SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 422;
+            SET OutputRoot.JSON.Data.success = FALSE;
+            SET OutputRoot.JSON.Data.error.code = 'INVALID_AMOUNT';
+            SET OutputRoot.JSON.Data.error.message =
+                'Amount must be greater than zero';
+
+            RETURN TRUE;
+        END IF;
+
+        SET OutputRoot = InputRoot;
+        SET OutputRoot.JSON.Data.success = TRUE;
+        
+
+        RETURN TRUE;
+    END;
+
+END MODULE;

@@ -1,0 +1,61 @@
+CREATE COMPUTE MODULE BankA_Payment_In_BuildCleanBankAResponse
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE transactionId CHARACTER;
+        DECLARE idempotencyKey CHARACTER;
+        DECLARE sourceAccount CHARACTER;
+        DECLARE destinationBank CHARACTER;
+        DECLARE destinationAccount CHARACTER;
+        DECLARE amount DECIMAL;
+        DECLARE currency CHARACTER;
+        DECLARE status CHARACTER;
+
+        SET transactionId =
+            InputRoot.JSON.Data.transactionId;
+
+        SET idempotencyKey =
+            InputRoot.JSON.Data.payment.idempotencyKey;
+
+        SET sourceAccount =
+            InputRoot.JSON.Data.payment.sourceAccount;
+
+        SET destinationBank =
+            InputRoot.JSON.Data.payment.destinationBank;
+
+        SET destinationAccount =
+            InputRoot.JSON.Data.payment.destinationAccount;
+
+        SET amount =
+            CAST(InputRoot.JSON.Data.payment.amount AS DECIMAL);
+
+        SET currency =
+            InputRoot.JSON.Data.payment.currency;
+
+        SET status =
+            InputRoot.JSON.Data.status;
+
+        DELETE FIELD OutputRoot;
+
+        SET OutputRoot.Properties.MessageDomain = 'JSON';
+
+        SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 200;
+
+        SET OutputRoot.JSON.Data.success = TRUE;
+        SET OutputRoot.JSON.Data.transactionId = transactionId;
+        SET OutputRoot.JSON.Data.idempotencyKey = idempotencyKey;
+        SET OutputRoot.JSON.Data.sourceAccount = sourceAccount;
+        SET OutputRoot.JSON.Data.destinationBank = destinationBank;
+        SET OutputRoot.JSON.Data.destinationAccount = destinationAccount;
+        SET OutputRoot.JSON.Data.amount = amount;
+        SET OutputRoot.JSON.Data.currency = currency;
+        SET OutputRoot.JSON.Data.status = status;
+        SET OutputRoot.JSON.Data.message =
+            'Payment accepted and Bank A debit completed';
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

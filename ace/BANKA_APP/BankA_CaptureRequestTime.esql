@@ -1,0 +1,15 @@
+CREATE COMPUTE MODULE BankA_Payment_In_CaptureRequestTime
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        SET Environment.Variables.inboundRequestTime =
+            CURRENT_GMTTIMESTAMP;
+
+        SET OutputRoot = InputRoot;
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

@@ -1,0 +1,66 @@
+CREATE COMPUTE MODULE IPNGateway_Flow_BuildMockIPNRequest
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE transactionId CHARACTER;
+        DECLARE sourceAccount CHARACTER;
+        DECLARE destinationBank CHARACTER;
+        DECLARE destinationAccount CHARACTER;
+        DECLARE amount DECIMAL;
+        DECLARE currency CHARACTER;
+        DECLARE idempotencyKey CHARACTER;
+
+        SET transactionId =
+            InputRoot.JSON.Data.transactionId;
+
+        SET sourceAccount =
+            InputRoot.JSON.Data.payment.sourceAccount;
+
+        SET destinationBank =
+            InputRoot.JSON.Data.payment.destinationBank;
+
+        SET destinationAccount =
+            InputRoot.JSON.Data.payment.destinationAccount;
+
+        SET amount =
+            CAST(InputRoot.JSON.Data.payment.amount AS DECIMAL);
+
+        SET currency =
+            InputRoot.JSON.Data.payment.currency;
+
+        SET idempotencyKey =
+            InputRoot.JSON.Data.payment.idempotencyKey;
+
+        /* Keep original values for later logging and response handling */
+        SET Environment.Variables.transactionId = transactionId;
+        SET Environment.Variables.sourceBank = 'BANKA';
+        SET Environment.Variables.sourceAccount = sourceAccount;
+        SET Environment.Variables.destinationBank = destinationBank;
+        SET Environment.Variables.destinationAccount = destinationAccount;
+        SET Environment.Variables.amount = amount;
+        SET Environment.Variables.currency = currency;
+        SET Environment.Variables.idempotencyKey = idempotencyKey;
+
+        DELETE FIELD OutputRoot;
+
+        SET OutputRoot.Properties.MessageDomain = 'JSON';
+        SET OutputRoot.HTTPRequestHeader."Content-Type" = 'application/json';
+		SET OutputRoot.HTTPRequestHeader."Accept" = 'application/json';
+
+        SET OutputRoot.JSON.Data.transactionId = transactionId;
+        SET OutputRoot.JSON.Data.sourceBank = 'BANKA';
+        SET OutputRoot.JSON.Data.sourceAccount = sourceAccount;
+        SET OutputRoot.JSON.Data.destinationBank = destinationBank;
+        SET OutputRoot.JSON.Data.destinationAccount = destinationAccount;
+        SET OutputRoot.JSON.Data.amount = amount;
+        SET OutputRoot.JSON.Data.currency = currency;
+        SET OutputRoot.JSON.Data.idempotencyKey = idempotencyKey;
+        SET OutputRoot.JSON.Data.status = 'DEBITED';
+        SET OutputRoot.JSON.Data.requestType = 'PAYMENT_TRANSFER';
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;

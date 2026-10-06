@@ -1,0 +1,60 @@
+CREATE COMPUTE MODULE BankA_Payment_In_CreateTransactionAndDebit
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE transactionId CHARACTER
+            InputRoot.JSON.Data.transactionId;
+
+        DECLARE idempotencyKey CHARACTER
+            InputRoot.JSON.Data.payment.idempotencyKey;
+
+        DECLARE sourceAccount CHARACTER
+            InputRoot.JSON.Data.payment.sourceAccount;
+
+        DECLARE destinationBank CHARACTER
+            InputRoot.JSON.Data.payment.destinationBank;
+
+        DECLARE destinationAccount CHARACTER
+            InputRoot.JSON.Data.payment.destinationAccount;
+
+        DECLARE amount DECIMAL
+            CAST(InputRoot.JSON.Data.payment.amount AS DECIMAL);
+
+        DECLARE currency CHARACTER
+            InputRoot.JSON.Data.payment.currency;
+
+        CALL CreateAndDebitPayment(
+            transactionId,
+            idempotencyKey,
+            sourceAccount,
+            destinationBank,
+            destinationAccount,
+            amount,
+            currency
+        );
+
+        SET OutputRoot = InputRoot;
+
+        SET OutputRoot.JSON.Data.status = 'DEBITED';
+        SET OutputRoot.JSON.Data.message =
+            'Transaction created and account debited successfully';
+
+        RETURN TRUE;
+
+    END;
+
+    CREATE PROCEDURE CreateAndDebitPayment
+    (
+        IN p_transaction_id CHARACTER,
+        IN p_idempotency_key CHARACTER,
+        IN p_source_account CHARACTER,
+        IN p_destination_bank CHARACTER,
+        IN p_destination_account CHARACTER,
+        IN p_amount DECIMAL,
+        IN p_currency CHARACTER
+    )
+    LANGUAGE DATABASE
+    EXTERNAL NAME "dbo.SP_CREATE_AND_DEBIT_PAYMENT";
+
+END MODULE;

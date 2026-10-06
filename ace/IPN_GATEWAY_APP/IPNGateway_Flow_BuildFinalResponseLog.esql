@@ -1,0 +1,48 @@
+CREATE COMPUTE MODULE IPNGateway_Flow_BuildFinalResponseLog
+
+    CREATE FUNCTION Main() RETURNS BOOLEAN
+    BEGIN
+
+        DECLARE transactionId CHARACTER;
+        DECLARE successText CHARACTER;
+        DECLARE networkStatus CHARACTER;
+        DECLARE responseMessage CHARACTER;
+        DECLARE payload CHARACTER;
+
+        SET transactionId =
+            Environment.Variables.transactionId;
+
+        IF InputRoot.JSON.Data.success = TRUE THEN
+            SET successText = 'true';
+        ELSE
+            SET successText = 'false';
+        END IF;
+
+        SET networkStatus =
+            InputRoot.JSON.Data.networkStatus;
+
+        SET responseMessage =
+            InputRoot.JSON.Data.message;
+
+        SET payload =
+            '{' ||
+            '"transactionId":"' || transactionId || '",' ||
+            '"finalStatus":"' || networkStatus || '",' ||
+            '"success":' || successText || ',' ||
+            '"message":"' || responseMessage || '"' ||
+            '}';
+
+        DELETE FIELD OutputRoot;
+
+        SET OutputRoot.Properties.MessageDomain = 'JSON';
+
+        SET OutputRoot.JSON.Data.transactionId = transactionId;
+        SET OutputRoot.JSON.Data.eventType = 'FINAL_RESPONSE';
+        SET OutputRoot.JSON.Data.payload = payload;
+        SET OutputRoot.JSON.Data.status = networkStatus;
+
+        RETURN TRUE;
+
+    END;
+
+END MODULE;
