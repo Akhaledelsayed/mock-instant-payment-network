@@ -30,7 +30,15 @@ The `ace/` directory contains the exact final ACE application projects exported 
 https://YOUR-MOCK-SERVER.mock.pstmn.io/ipn/payments
 ```
 
-Then update the `CallMockIPN` HTTP Request node URL before deploying.
+The original environment-specific Mock Server URL is intentionally not included in the public repository.
+
+On another machine, create a Postman Mock Server that returns the response defined in:
+
+```text
+postman/mock-ipn-success-response.json
+```
+
+Then update the `CallMockIPN` HTTP Request node URL before deploying the application.
 
 ## Legacy source remnants preserved intentionally
 
