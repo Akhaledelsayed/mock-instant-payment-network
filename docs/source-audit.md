@@ -24,12 +24,10 @@ The `ace/` directory contains the exact final ACE application projects exported 
 
 ## Important runtime-specific value
 
-`IPN_GATEWAY_APP/IPNGateway_Flow.msgflow` contains the Postman Mock Server URL used during the verified local test.
-
-That URL is not a credential, but it is environment-specific and may expire or be deleted. On another machine, create a Postman Mock Server that returns the response in:
+`IPN_GATEWAY_APP/IPNGateway_Flow.msgflow` contains a placeholder for the Postman Mock Server endpoint:
 
 ```text
-postman/mock-ipn-success-response.json
+https://YOUR-MOCK-SERVER.mock.pstmn.io/ipn/payments
 ```
 
 Then update the `CallMockIPN` HTTP Request node URL before deploying.
